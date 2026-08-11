@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Plus, Search } from '@lucide/vue';
+import { GraduationCap, Plus, Search } from '@lucide/vue';
 import { ref } from 'vue';
+import EmptyState from '@/components/EmptyState.vue';
 import Pagination from '@/components/Pagination.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -47,7 +54,8 @@ const applyFilters = () => {
         studentsRoute(),
         {
             search: search.value || undefined,
-            location_type: locationType.value === 'all' ? undefined : locationType.value,
+            location_type:
+                locationType.value === 'all' ? undefined : locationType.value,
         },
         { preserveState: true, preserveScroll: true },
     );
@@ -56,7 +64,11 @@ const applyFilters = () => {
 const clearFilters = () => {
     search.value = '';
     locationType.value = 'all';
-    router.get(studentsRoute(), {}, { preserveState: true, preserveScroll: true });
+    router.get(
+        studentsRoute(),
+        {},
+        { preserveState: true, preserveScroll: true },
+    );
 };
 </script>
 
@@ -64,11 +76,16 @@ const clearFilters = () => {
     <Head title="Data Santri" />
 
     <div class="flex flex-col gap-4 p-4">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div
+            class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        >
             <div>
-                <h2 class="text-2xl font-semibold tracking-tight">Data Santri</h2>
+                <h2 class="text-2xl font-semibold tracking-tight">
+                    Data Santri
+                </h2>
                 <p class="text-sm text-muted-foreground">
-                    Master data santri Pondok Pesantren Salafiyah Syafi'iyah Sukorejo.
+                    Master data santri Pondok Pesantren Salafiyah Syafi'iyah
+                    Sukorejo.
                 </p>
             </div>
             <Button as-child>
@@ -82,13 +99,17 @@ const clearFilters = () => {
         <Card>
             <CardHeader>
                 <CardTitle>Pencarian & Filter</CardTitle>
-                <CardDescription>Cari berdasarkan NIS, nama, atau asrama.</CardDescription>
+                <CardDescription
+                    >Cari berdasarkan NIS, nama, atau asrama.</CardDescription
+                >
             </CardHeader>
             <CardContent class="flex flex-col gap-3 md:flex-row">
                 <div class="grid flex-1 gap-2">
                     <Label for="search">Kata kunci</Label>
                     <div class="relative">
-                        <Search class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Search
+                            class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                        />
                         <Input
                             id="search"
                             v-model="search"
@@ -106,7 +127,11 @@ const clearFilters = () => {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Semua Lokasi</SelectItem>
-                            <SelectItem v-for="loc in locations" :key="loc" :value="loc">
+                            <SelectItem
+                                v-for="loc in locations"
+                                :key="loc"
+                                :value="loc"
+                            >
                                 {{ loc }}
                             </SelectItem>
                         </SelectContent>
@@ -124,30 +149,46 @@ const clearFilters = () => {
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b text-left text-muted-foreground">
-                            <th class="pb-2 pr-4 font-medium">NIS</th>
-                            <th class="pb-2 pr-4 font-medium">Nama</th>
-                            <th class="pb-2 pr-4 font-medium">Asrama</th>
-                            <th class="pb-2 pr-4 font-medium">Lokasi</th>
+                            <th class="pr-4 pb-2 font-medium">NIS</th>
+                            <th class="pr-4 pb-2 font-medium">Nama</th>
+                            <th class="pr-4 pb-2 font-medium">Asrama</th>
+                            <th class="pr-4 pb-2 font-medium">Lokasi</th>
                             <th class="pb-2 font-medium">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="student in students.data" :key="student.id" class="border-b last:border-0">
-                            <td class="py-3 pr-4 font-mono text-xs">{{ student.nis }}</td>
-                            <td class="py-3 pr-4 font-medium">{{ student.name }}</td>
+                        <tr
+                            v-for="student in students.data"
+                            :key="student.id"
+                            class="border-b last:border-0"
+                        >
+                            <td class="py-3 pr-4 font-mono text-xs">
+                                {{ student.nis }}
+                            </td>
+                            <td class="py-3 pr-4 font-medium">
+                                {{ student.name }}
+                            </td>
                             <td class="py-3 pr-4">{{ student.dormitory }}</td>
                             <td class="py-3 pr-4">
-                                <Badge variant="secondary">{{ student.location_type }}</Badge>
+                                <Badge variant="secondary">{{
+                                    student.location_type
+                                }}</Badge>
                             </td>
                             <td class="py-3">
                                 <Button as-child variant="outline" size="sm">
-                                    <Link :href="`/students/${student.id}/edit`">Edit</Link>
+                                    <Link :href="`/students/${student.id}/edit`"
+                                        >Edit</Link
+                                    >
                                 </Button>
                             </td>
                         </tr>
                         <tr v-if="students.data.length === 0">
-                            <td colspan="5" class="py-8 text-center text-muted-foreground">
-                                Tidak ada data santri yang cocok.
+                            <td colspan="5">
+                                <EmptyState
+                                    :icon="GraduationCap"
+                                    title="Belum ada data santri"
+                                    description="Tidak ada data santri yang cocok dengan pencarian Anda."
+                                />
                             </td>
                         </tr>
                     </tbody>

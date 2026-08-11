@@ -9,7 +9,7 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground hover:bg-primary/90",
+          "bg-primary-700 text-white hover:bg-primary-800 focus-visible:ring-primary-600/30",
         destructive:
           "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
@@ -19,6 +19,8 @@ export const buttonVariants = cva(
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
+        accent:
+          "bg-accent-500 text-primary-950 hover:bg-accent-600 hover:text-primary-950 focus-visible:ring-accent-500/30",
       },
       size: {
         "default": "h-9 px-4 py-2 has-[>svg]:px-3",

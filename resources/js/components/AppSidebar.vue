@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { usePage } from '@inertiajs/vue3';
-import { BookOpen, Boxes, FolderGit2, LayoutGrid, MapPin, Users } from '@lucide/vue';
+import { Boxes, LayoutGrid, MapPin, Users, UserRoundCog } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
-import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
+import RegionIndicator from '@/components/RegionIndicator.vue';
 import {
     Sidebar,
     SidebarContent,
@@ -24,59 +24,49 @@ import { index as users } from '@/routes/users';
 import type { NavItem } from '@/types';
 
 const page = usePage<{ auth: { user?: { role?: string } } }>();
-const isSuperAdmin = computed(() => page.props.auth.user?.role === 'super_admin');
-
-const mainNavItems = computed<NavItem[]>(() => [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Kiriman',
-        href: shipments(),
-        icon: Boxes,
-    },
-    {
-        title: 'Data Santri',
-        href: students(),
-        icon: Users,
-        isActive: false,
-    },
-    {
-        title: 'Wilayah IKSASS',
-        href: regions(),
-        icon: MapPin,
-        isActive: false,
-    },
-    {
-        title: 'Pengguna',
-        href: users(),
-        icon: Users,
-        isActive: false,
-    },
-]);
-
-const visibleNavItems = computed(() =>
-    isSuperAdmin.value
-        ? mainNavItems.value
-        : mainNavItems.value.filter(
-              (item) => !['Data Santri', 'Wilayah IKSASS', 'Pengguna'].includes(item.title),
-          ),
+const isSuperAdmin = computed(
+    () => page.props.auth.user?.role === 'super_admin',
 );
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
-        icon: BookOpen,
-    },
-];
+const navGroups = computed(() => {
+    const main: NavItem[] = [
+        {
+            title: 'Dashboard',
+            href: dashboard(),
+            icon: LayoutGrid,
+        },
+        {
+            title: 'Kiriman',
+            href: shipments(),
+            icon: Boxes,
+        },
+        {
+            title: 'Data Santri',
+            href: students(),
+            icon: Users,
+        },
+    ];
+
+    const admin: NavItem[] = [
+        {
+            title: 'Wilayah IKSASS',
+            href: regions(),
+            icon: MapPin,
+        },
+        {
+            title: 'Pengguna',
+            href: users(),
+            icon: UserRoundCog,
+        },
+    ];
+
+    return isSuperAdmin.value
+        ? [
+              { label: 'Utama', items: main },
+              { label: 'Administrasi', items: admin },
+          ]
+        : [{ label: 'Utama', items: main }];
+});
 </script>
 
 <template>
@@ -94,11 +84,14 @@ const footerNavItems: NavItem[] = [
         </SidebarHeader>
 
         <SidebarContent>
-            <NavMain :items="visibleNavItems" />
+            <div class="px-3 pb-3 group-data-[collapsible=icon]:hidden">
+                <RegionIndicator />
+            </div>
+
+            <NavMain :groups="navGroups" />
         </SidebarContent>
 
         <SidebarFooter>
-            <NavFooter :items="footerNavItems" />
             <NavUser />
         </SidebarFooter>
     </Sidebar>
