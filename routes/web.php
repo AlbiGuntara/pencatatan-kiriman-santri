@@ -20,6 +20,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('shipments/create', [ShipmentController::class, 'create'])->name('shipments.create');
     Route::post('shipments', [ShipmentController::class, 'store'])->name('shipments.store');
     Route::get('shipments/print', [ShipmentController::class, 'print'])->name('shipments.print');
+    Route::get('shipments/import/template', [ShipmentController::class, 'downloadImportTemplate'])->name('shipments.import-template');
+    Route::post('shipments/import', [ShipmentController::class, 'import'])->name('shipments.import');
     Route::delete('shipments/destroy-many', [ShipmentController::class, 'destroyMany'])->name('shipments.destroy-many');
     Route::post('shipments/bulk-status', [ShipmentController::class, 'bulkUpdateStatus'])->name('shipments.bulk-status');
     Route::get('shipments/{shipment}', [ShipmentController::class, 'show'])->name('shipments.show');

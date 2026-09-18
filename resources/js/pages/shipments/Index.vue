@@ -4,7 +4,10 @@ import {
     ArrowRightLeft,
     Boxes,
     Check,
+    Download,
     Eye,
+    FileSpreadsheet,
+    FileUp,
     Loader2,
     Plus,
     Printer,
@@ -13,12 +16,14 @@ import {
 } from '@lucide/vue';
 import type { CheckboxCheckedState } from 'reka-ui';
 import { computed, ref, watch } from 'vue';
+import ShipmentController from '@/actions/App/Http/Controllers/ShipmentController';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import InputError from '@/components/InputError.vue';
 import ShipmentStatusBadge from '@/components/ShipmentStatusBadge.vue';
 import SortableHeader from '@/components/SortableHeader.vue';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -49,6 +54,7 @@ import {
     bulkStatus as bulkStatusRoute,
     create as createShipmentRoute,
     destroyMany as destroyManyShipmentsRoute,
+    importTemplate as importTemplateRoute,
     index as shipmentsRoute,
     print as printShipmentsRoute,
     show as showShipmentRoute,
@@ -90,6 +96,7 @@ const props = defineProps<{
     statuses: Record<string, string>;
     regions: Region[];
     isSuperAdmin: boolean;
+    importErrors: string[];
 }>();
 
 const search = ref(props.filters.search ?? '');
@@ -281,6 +288,30 @@ const deleteSelected = () => {
         preserveScroll: true,
     });
 };
+
+const importDialogOpen = ref(false);
+const importFile = ref<File | null>(null);
+const importFileName = ref('');
+const importErrors = ref<string[]>(props.importErrors);
+
+watch(
+    () => props.importErrors,
+    (errors) => {
+        importErrors.value = errors;
+    },
+);
+
+const dismissImportErrors = () => {
+    importErrors.value = [];
+};
+
+const onImportFileChange = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    importFile.value = target.files?.[0] ?? null;
+    importFileName.value = importFile.value?.name ?? '';
+};
+
+const importTemplateUrl = importTemplateRoute().url;
 </script>
 
 <template>
@@ -298,6 +329,118 @@ const deleteSelected = () => {
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
+                <Dialog v-model:open="importDialogOpen">
+                    <DialogTrigger as-child>
+                        <Button variant="outline">
+                            <FileUp />
+                            Import Excel
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader class="space-y-3">
+                            <DialogTitle class="flex items-center gap-2">
+                                <FileSpreadsheet class="size-5 text-primary" />
+                                Import Data Kiriman
+                            </DialogTitle>
+                            <DialogDescription>
+                                Tambahkan banyak kiriman sekaligus dengan
+                                mengunggah file Excel. Ikuti format pada file
+                                template, lalu periksa hasil impornya.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <Form
+                            v-bind="ShipmentController.import.form()"
+                            enctype="multipart/form-data"
+                            class="space-y-4"
+                            v-slot="{ errors, processing }"
+                            @success="importDialogOpen = false"
+                        >
+                            <div
+                                v-if="isSuperAdmin"
+                                class="grid gap-2"
+                            >
+                                <Label for="import-region"
+                                    >Wilayah IKSASS *</Label
+                                >
+                                <Select name="region_iksass_id">
+                                    <SelectTrigger
+                                        id="import-region"
+                                        class="w-full"
+                                    >
+                                        <SelectValue
+                                            placeholder="Pilih wilayah IKSASS"
+                                        />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem
+                                            v-for="r in regions"
+                                            :key="r.id"
+                                            :value="String(r.id)"
+                                        >
+                                            {{ r.name }}
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <InputError
+                                    :message="errors.region_iksass_id"
+                                />
+                            </div>
+
+                            <div class="grid gap-2">
+                                <Label for="import-file">File Excel *</Label>
+                                <Input
+                                    id="import-file"
+                                    name="file"
+                                    type="file"
+                                    accept=".xlsx,.xls,.csv"
+                                    required
+                                    class="file:text-sm"
+                                    @change="onImportFileChange"
+                                />
+                                <p class="mt-1 text-center font-mono text-xs text-muted-foreground break-all">
+                                    {{ importFileName || 'Belum ada file dipilih.' }}
+                                </p>
+                                <InputError :message="errors.file" />
+                            </div>
+
+                            <Button
+                                as-child
+                                variant="ghost"
+                                size="sm"
+                                class="w-fit -m-1 text-xs"
+                            >
+                                <a
+                                    :href="importTemplateUrl"
+                                    target="_blank"
+                                    rel="noopener"
+                                >
+                                    <Download />
+                                    Unduh template Excel
+                                </a>
+                            </Button>
+
+                            <DialogFooter class="gap-2">
+                                <DialogClose as-child>
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                    >
+                                        Batal
+                                    </Button>
+                                </DialogClose>
+                                <Button type="submit" :disabled="processing">
+                                    <Loader2
+                                        v-if="processing"
+                                        class="animate-spin"
+                                    />
+                                    <FileUp v-else />
+                                    Import Sekarang
+                                </Button>
+                            </DialogFooter>
+                        </Form>
+                    </DialogContent>
+                </Dialog>
                 <Button as-child>
                     <Link
                         :href="
@@ -312,6 +455,37 @@ const deleteSelected = () => {
                 </Button>
             </div>
         </div>
+
+        <!-- Import result -->
+        <Alert
+            v-if="importErrors.length > 0"
+            variant="destructive"
+        >
+            <FileSpreadsheet />
+            <AlertTitle class="font-semibold">
+                {{ importErrors.length }} baris dilewati saat impor
+            </AlertTitle>
+            <AlertDescription class="mt-2">
+                <ul
+                    class="max-h-56 list-disc space-y-1 overflow-auto pl-5 text-xs"
+                >
+                    <li
+                        v-for="(error, index) in importErrors"
+                        :key="index"
+                    >
+                        {{ error }}
+                    </li>
+                </ul>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    class="mt-3 h-auto text-xs"
+                    @click="dismissImportErrors"
+                >
+                    Tutup
+                </Button>
+            </AlertDescription>
+        </Alert>
 
         <!-- Filter bar -->
         <Card class="gap-0 py-4">
