@@ -29,7 +29,7 @@ const options = [10, 15, 20, 25, 50, 100];
         :class="[
             'flex flex-col gap-3 px-4 py-3.5 sm:px-5',
             bordered
-                ? 'border-t border-border bg-gradient-to-b from-surface-muted/70 to-surface-muted/30'
+                ? 'border-t border-border bg-gradient-to-b from-surface-muted/70 to-surface-muted/30 dark:from-white/[0.04] dark:to-transparent'
                 : '',
         ]"
     >

@@ -223,7 +223,7 @@ const kpis = computed(() => [
 <template>
     <Head title="Dashboard" />
 
-    <div class="flex min-h-full w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
+    <div class="dashboard-page flex min-h-full w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
         <!-- Hero / Greeting -->
         <div
             class="relative overflow-hidden rounded-3xl border border-primary-800/40 bg-gradient-to-br from-emerald-950 via-primary-900 to-primary-700 p-6 shadow-elevated md:p-8 dark:from-emerald-950 dark:via-emerald-900 dark:to-primary-800"
@@ -421,7 +421,7 @@ const kpis = computed(() => [
                         <div
                             v-for="seg in statusSegments"
                             :key="seg.label"
-                            class="flex items-center justify-between rounded-lg bg-surface-muted/70 px-3 py-2"
+                            class="flex items-center justify-between rounded-lg border border-transparent bg-surface-muted/70 px-3 py-2 dark:border-border/50 dark:bg-white/[0.04]"
                         >
                             <span
                                 class="flex items-center gap-2 text-sm"
@@ -467,7 +467,7 @@ const kpis = computed(() => [
                     <table class="w-full text-sm">
                         <thead>
                             <tr
-                                class="border-y border-border bg-surface-muted/60 text-left"
+                                class="border-y border-border bg-surface-muted/60 text-left dark:bg-surface-muted"
                             >
                                 <th
                                     class="px-5 py-2.5 font-medium text-muted-foreground"
@@ -505,7 +505,7 @@ const kpis = computed(() => [
                             <tr
                                 v-for="item in recentShipments"
                                 :key="item.id"
-                                class="border-b border-border last:border-0 hover:bg-surface-muted/50"
+                                class="border-b border-border last:border-0 hover:bg-surface-muted/50 dark:hover:bg-white/[0.06]"
                             >
                                 <td class="px-5 py-3 font-mono text-xs">
                                     <Link
@@ -600,7 +600,7 @@ const kpis = computed(() => [
                                     </span>
                                 </div>
                                 <div
-                                    class="h-2 overflow-hidden rounded-full bg-surface-muted"
+                                    class="h-2 overflow-hidden rounded-full bg-surface-muted dark:bg-white/[0.08]"
                                 >
                                     <div
                                         class="h-full rounded-full bg-gradient-to-r from-primary-600 to-primary-400"
@@ -628,7 +628,7 @@ const kpis = computed(() => [
                                     </span>
                                 </div>
                                 <div
-                                    class="h-2 overflow-hidden rounded-full bg-surface-muted"
+                                    class="h-2 overflow-hidden rounded-full bg-surface-muted dark:bg-white/[0.08]"
                                 >
                                     <div
                                         class="h-full rounded-full bg-gradient-to-r from-sky-500 to-info"
@@ -648,7 +648,7 @@ const kpis = computed(() => [
                                     </span>
                                 </div>
                                 <div
-                                    class="h-2 overflow-hidden rounded-full bg-surface-muted"
+                                    class="h-2 overflow-hidden rounded-full bg-surface-muted dark:bg-white/[0.08]"
                                 >
                                     <div
                                         class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-success"

@@ -204,7 +204,7 @@ const deleteRegion = (region: Region) => {
         >
             <table class="w-full text-sm">
                 <thead
-                    class="sticky top-0 z-10 bg-surface-muted/60 backdrop-blur-sm"
+                    class="sticky top-0 z-10 bg-surface-muted/60 backdrop-blur-sm dark:bg-surface-muted"
                 >
                     <tr class="border-b border-border text-left">
                         <SortableHeader
@@ -248,7 +248,7 @@ const deleteRegion = (region: Region) => {
                     <tr
                         v-for="(region, index) in regions.data"
                         :key="region.id"
-                        class="border-b border-border/60 transition-colors last:border-0 even:bg-surface-muted/30 hover:bg-surface-muted/70"
+                        class="border-b border-border/60 transition-colors last:border-0 even:bg-surface-muted/30 hover:bg-surface-muted/70 dark:even:bg-white/[0.03] dark:hover:bg-white/[0.06]"
                     >
                         <td
                             class="px-3 py-3 text-xs text-muted-foreground tabular-nums"

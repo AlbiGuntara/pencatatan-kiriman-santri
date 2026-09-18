@@ -55,8 +55,10 @@
     --radius-xl: 20px;
 
     --shadow-sm: 0 1px 2px rgba(4, 41, 26, 0.05);
-    --shadow-card: 0 1px 2px rgba(4, 41, 26, 0.04), 0 4px 16px -4px rgba(4, 41, 26, 0.07);
-    --shadow-elevated: 0 2px 4px rgba(4, 41, 26, 0.05), 0 16px 40px -12px rgba(4, 41, 26, 0.18);
+    --shadow-card:
+        0 1px 2px rgba(4, 41, 26, 0.04), 0 4px 16px -4px rgba(4, 41, 26, 0.07);
+    --shadow-elevated:
+        0 2px 4px rgba(4, 41, 26, 0.05), 0 16px 40px -12px rgba(4, 41, 26, 0.18);
 }
 
 @theme inline {
@@ -155,31 +157,35 @@
 }
 
 .dark {
-    --background: #0b120d;
-    --foreground: #e3eee6;
-    --card: #111b14;
-    --card-foreground: #e3eee6;
-    --popover: #141f17;
-    --popover-foreground: #e3eee6;
+    --background: #060b08;
+    --foreground: #edf4ee;
+    --card: #0e1711;
+    --card-foreground: #edf4ee;
+    --popover: #131f17;
+    --popover-foreground: #edf4ee;
     --primary: #34c583;
     --primary-foreground: #04291a;
-    --secondary: #17241b;
-    --secondary-foreground: #e3eee6;
-    --muted: #16221a;
-    --muted-foreground: #8da599;
-    --accent: #12301f;
-    --accent-foreground: #a8efcb;
+    --secondary: #1a2a20;
+    --secondary-foreground: #edf4ee;
+    --muted: #1a2a20;
+    --muted-foreground: #9db8a9;
+    --accent: #153825;
+    --accent-foreground: #b8eecd;
     --destructive: #f87171;
-    --destructive-foreground: #14201a;
-    --border: #203026;
-    --input: #243527;
+    --destructive-foreground: #0e1711;
+    --border: #2a4233;
+    --input: #2d4636;
     --ring: #34c583;
 
+    /* Surface scale — fixes pale wash: mirrors card → stepped zone above it */
+    --color-surface: #0e1711;
+    --color-surface-muted: #1f3127;
+
     --chart-1: #34c583;
-    --chart-2: #17a368;
+    --chart-2: #22a06a;
     --chart-3: #d9ab33;
     --chart-4: #6bdfa8;
-    --chart-5: #7d8f84;
+    --chart-5: #8fa89a;
 
     --radius: 0.75rem;
 
@@ -188,9 +194,9 @@
     --sidebar-foreground: #cdeeda;
     --sidebar-primary: #34c583;
     --sidebar-primary-foreground: #04291a;
-    --sidebar-accent: rgba(255, 255, 255, 0.08);
+    --sidebar-accent: rgba(255, 255, 255, 0.1);
     --sidebar-accent-foreground: #ffffff;
-    --sidebar-border: rgba(255, 255, 255, 0.09);
+    --sidebar-border: rgba(255, 255, 255, 0.12);
     --sidebar-ring: #34c583;
 }
 
@@ -245,6 +251,17 @@
     &::-webkit-scrollbar {
         display: none;
     }
+}
+
+/* Dashboard: hide the internal y-scrollbar of the sidebar inset only while
+   the dashboard page is active. Scrolling (wheel/touch/keyboard) still works. */
+main[data-slot='sidebar-inset']:has(.dashboard-page) {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+main[data-slot='sidebar-inset']:has(.dashboard-page)::-webkit-scrollbar {
+    display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

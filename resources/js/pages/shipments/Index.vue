@@ -650,7 +650,7 @@ const importTemplateUrl = importTemplateRoute().url;
                                         :class="
                                             bulkTarget === key
                                                 ? 'border-primary-600 bg-primary-600 text-white'
-                                                : 'border-input text-foreground hover:bg-surface-muted'
+                                                : 'border-input text-foreground hover:bg-surface-muted dark:hover:bg-white/10'
                                         "
                                         @click="bulkTarget = key"
                                     >
@@ -760,7 +760,7 @@ const importTemplateUrl = importTemplateRoute().url;
         >
             <table class="w-full text-sm">
                     <thead
-                        class="sticky top-0 z-10 bg-surface-muted/60 backdrop-blur-sm"
+                        class="sticky top-0 z-10 bg-surface-muted/60 backdrop-blur-sm dark:bg-surface-muted"
                     >
                         <tr class="border-b border-border text-left">
                             <th class="w-12 px-3 py-3">
@@ -836,9 +836,9 @@ const importTemplateUrl = importTemplateRoute().url;
                         <tr
                             v-for="(item, index) in shipments.data"
                             :key="item.id"
-                            class="border-b border-border/60 transition-colors last:border-0 even:bg-surface-muted/30 hover:bg-surface-muted/70"
+                            class="border-b border-border/60 transition-colors last:border-0 even:bg-surface-muted/30 hover:bg-surface-muted/70 dark:even:bg-white/[0.03] dark:hover:bg-white/[0.06]"
                             :class="{
-                                'bg-primary-50/60 hover:bg-primary-50/80 dark:bg-primary-950/20 dark:hover:bg-primary-950/30':
+                                'bg-primary-50/60 hover:bg-primary-50/80 dark:bg-primary-950/50 dark:hover:bg-primary-950/60':
                                     isSelected(item.id),
                             }"
                         >

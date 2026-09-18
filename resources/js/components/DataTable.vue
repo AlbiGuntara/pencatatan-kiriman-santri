@@ -33,7 +33,7 @@ const emit = defineEmits<{
         "
     >
         <div
-            class="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-muted/70 px-4 py-3"
+            class="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-muted/70 px-4 py-3 dark:bg-surface-muted/90"
         >
             <div class="flex min-w-0 items-center gap-2.5">
                 <span
