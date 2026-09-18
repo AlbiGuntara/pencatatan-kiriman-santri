@@ -1,14 +1,38 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
-import { Boxes, Plus, Printer, Search } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { Form, Head, Link, router, usePage } from '@inertiajs/vue3';
+import {
+    ArrowRightLeft,
+    Boxes,
+    Check,
+    Eye,
+    Loader2,
+    Plus,
+    Printer,
+    Search,
+    Trash2,
+} from '@lucide/vue';
+import type { CheckboxCheckedState } from 'reka-ui';
+import { computed, ref, watch } from 'vue';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
+import DataTable from '@/components/DataTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
-import Pagination from '@/components/Pagination.vue';
+import InputError from '@/components/InputError.vue';
 import ShipmentStatusBadge from '@/components/ShipmentStatusBadge.vue';
+import SortableHeader from '@/components/SortableHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -18,9 +42,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useOutOfRangePage } from '@/composables/useOutOfRangePage';
+import { useTableSort } from '@/composables/useTableSort';
 import { formatCurrency, formatDateTime } from '@/lib/format';
-import { index as shipmentsRoute } from '@/routes/shipments';
-import { create as createShipmentRoute } from '@/routes/shipments';
+import {
+    bulkStatus as bulkStatusRoute,
+    create as createShipmentRoute,
+    destroyMany as destroyManyShipmentsRoute,
+    index as shipmentsRoute,
+    print as printShipmentsRoute,
+    show as showShipmentRoute,
+} from '@/routes/shipments';
 import type { Region, Shipment } from '@/types';
 
 defineOptions({
@@ -34,12 +66,27 @@ defineOptions({
     },
 });
 
+type PaginationLink = { url: string | null; label: string; active: boolean };
+
 const props = defineProps<{
     shipments: {
         data: Shipment[];
-        links: Array<{ url: string | null; label: string; active: boolean }>;
+        links: PaginationLink[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        from: number | null;
+        to: number | null;
+        total: number;
     };
-    filters: { search?: string; status?: string; region_id?: string };
+    filters: {
+        search?: string;
+        status?: string;
+        region_id?: string;
+        per_page?: number;
+        sort?: string;
+        direction?: string;
+    };
     statuses: Record<string, string>;
     regions: Region[];
     isSuperAdmin: boolean;
@@ -48,6 +95,13 @@ const props = defineProps<{
 const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? 'all');
 const regionId = ref(props.filters.region_id ?? 'all');
+const perPage = ref(
+    String(props.filters.per_page ?? props.shipments.per_page ?? 10),
+);
+const { sort, cycle: cycleSort, reset: resetSort } = useTableSort({
+    column: props.filters.sort ?? null,
+    direction: props.filters.direction === 'desc' ? 'desc' : 'asc',
+});
 const selectedIds = ref<number[]>([]);
 
 const allSelected = computed(
@@ -56,56 +110,176 @@ const allSelected = computed(
         selectedIds.value.length === props.shipments.data.length,
 );
 
-const toggleAll = (checked: boolean) => {
-    selectedIds.value = checked ? props.shipments.data.map((s) => s.id) : [];
+const toggleAll = (checked: CheckboxCheckedState) => {
+    selectedIds.value =
+        checked === true ? props.shipments.data.map((s) => s.id) : [];
 };
 
 const isSelected = (id: number) => selectedIds.value.includes(id);
 
-const toggle = (id: number, checked: boolean) => {
-    if (checked) {
+const toggle = (id: number, checked: CheckboxCheckedState) => {
+    if (checked === true) {
         selectedIds.value.push(id);
     } else {
         selectedIds.value = selectedIds.value.filter((x) => x !== id);
     }
 };
 
+watch(
+    () => props.shipments.data,
+    (data) => {
+        const ids = new Set(data.map((s) => s.id));
+        selectedIds.value = selectedIds.value.filter((id) => ids.has(id));
+    },
+);
+
 const hasActiveFilters = computed(
     () =>
         Boolean(search.value) ||
         status.value !== 'all' ||
-        regionId.value !== 'all',
+        regionId.value !== 'all' ||
+        sort.value.column !== null,
+);
+
+const buildParams = () => ({
+    search: search.value || undefined,
+    status: status.value === 'all' ? undefined : status.value,
+    region_id: regionId.value === 'all' ? undefined : regionId.value,
+    per_page: perPage.value,
+    sort: sort.value.column ?? undefined,
+    direction: sort.value.column ? sort.value.direction : undefined,
+});
+
+const page = usePage();
+
+const backToList = () => page.url;
+
+useOutOfRangePage(
+    () => props.shipments,
+    () => shipmentsRoute().url,
+    buildParams,
 );
 
 const applyFilters = () => {
-    router.get(
-        shipmentsRoute(),
-        {
-            search: search.value || undefined,
-            status: status.value === 'all' ? undefined : status.value,
-            region_id: regionId.value === 'all' ? undefined : regionId.value,
-        },
-        { preserveState: true, preserveScroll: true },
-    );
+    router.get(shipmentsRoute(), buildParams(), {
+        preserveState: true,
+        preserveScroll: true,
+    });
 };
 
 const clearFilters = () => {
     search.value = '';
     status.value = 'all';
     regionId.value = 'all';
+    resetSort();
     router.get(
         shipmentsRoute(),
-        {},
+        { per_page: perPage.value },
         { preserveState: true, preserveScroll: true },
     );
 };
+
+const sortBy = (column: string) => {
+    cycleSort(column);
+
+    router.get(shipmentsRoute(), buildParams(), {
+        preserveState: true,
+        preserveScroll: true,
+    });
+};
+
+const changePerPage = (value: string) => {
+    perPage.value = value;
+    router.get(shipmentsRoute(), buildParams(), {
+        preserveState: true,
+        preserveScroll: true,
+    });
+};
+
+const rowIndex = (index: number) =>
+    (props.shipments.current_page - 1) * props.shipments.per_page + index + 1;
 
 const printSelected = () => {
     if (selectedIds.value.length === 0) {
         return;
     }
 
-    window.location.href = `/shipments/print?shipments=${selectedIds.value.join(',')}`;
+    window.location.href = printShipmentsRoute({
+        query: { shipments: selectedIds.value },
+    }).url;
+};
+
+const bulkStatusOpen = ref(false);
+const bulkTarget = ref<string>('');
+const bulkAttachmentPreview = ref<string | null>(null);
+
+const bulkTargets = computed(() => {
+    const targets = new Set<string>();
+    const selected = new Set(selectedIds.value);
+
+    for (const item of props.shipments.data) {
+        if (!selected.has(item.id)) {
+            continue;
+        }
+
+        if (item.status === 'created') {
+            targets.add('in_transit');
+        } else if (item.status === 'in_transit') {
+            targets.add('delivered');
+        }
+    }
+
+    return Object.entries(props.statuses).filter(([key]) => targets.has(key));
+});
+
+const canBulkStatus = computed(() => {
+    if (selectedIds.value.length === 0) {
+        return false;
+    }
+
+    const selected = new Set(selectedIds.value);
+    const statuses = new Set<string>();
+
+    for (const item of props.shipments.data) {
+        if (selected.has(item.id)) {
+            statuses.add(item.status);
+        }
+    }
+
+    if (statuses.size !== 1) {
+        return false;
+    }
+
+    const status = statuses.values().next().value as string | undefined;
+
+    return status === 'created' || status === 'in_transit';
+});
+
+const openBulkStatus = () => {
+    bulkTarget.value = bulkTargets.value[0]?.[0] ?? '';
+    bulkAttachmentPreview.value = null;
+    bulkStatusOpen.value = true;
+};
+
+const onBulkFileChange = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    bulkAttachmentPreview.value = file ? URL.createObjectURL(file) : null;
+};
+
+const clearSelection = () => {
+    selectedIds.value = [];
+};
+
+const deleteSelected = () => {
+    if (selectedIds.value.length === 0) {
+        return;
+    }
+
+    router.delete(destroyManyShipmentsRoute().url, {
+        data: { ids: selectedIds.value },
+        preserveScroll: true,
+    });
 };
 </script>
 
@@ -123,23 +297,15 @@ const printSelected = () => {
                     Kelola dan pantau seluruh data kiriman.
                 </p>
             </div>
-            <div class="flex items-center gap-2">
-                <Button
-                    variant="outline"
-                    :disabled="selectedIds.length === 0"
-                    @click="printSelected"
-                >
-                    <Printer />
-                    Cetak Stiker
-                    <span
-                        v-if="selectedIds.length > 0"
-                        class="rounded-full bg-primary-100 px-1.5 py-0.5 text-[11px] font-semibold text-primary-800"
-                    >
-                        {{ selectedIds.length }}
-                    </span>
-                </Button>
+            <div class="flex flex-wrap items-center gap-2">
                 <Button as-child>
-                    <Link :href="createShipmentRoute()">
+                    <Link
+                        :href="
+                            createShipmentRoute({
+                                query: { back: backToList() },
+                            })
+                        "
+                    >
                         <Plus />
                         Tambah Kiriman
                     </Link>
@@ -232,64 +398,261 @@ const printSelected = () => {
             </CardContent>
         </Card>
 
-        <!-- Desktop table -->
-        <Card class="hidden gap-0 overflow-hidden py-0 md:block">
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+        <!-- Bulk action bar -->
+        <div
+            v-if="selectedIds.length > 0"
+            class="flex flex-wrap items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-3 py-2 shadow-card dark:border-primary-800 dark:bg-primary-950/60"
+        >
+            <div class="flex items-center gap-1">
+                <span
+                    class="text-sm font-semibold text-primary-900 dark:text-primary-100"
+                >
+                    {{ selectedIds.length }} kiriman dipilih
+                </span>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    class="text-muted-foreground"
+                    @click="clearSelection"
+                >
+                    Batal
+                </Button>
+            </div>
+            <div class="ml-auto flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" @click="printSelected">
+                    <Printer />
+                    Cetak Stiker
+                </Button>
+                <Dialog v-model:open="bulkStatusOpen">
+                    <DialogTrigger as-child>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            :disabled="!canBulkStatus"
+                            @click="openBulkStatus"
+                        >
+                            <ArrowRightLeft />
+                            Ubah Status
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader class="space-y-3">
+                            <DialogTitle>Perbarui Status Kiriman</DialogTitle>
+                            <DialogDescription>
+                                Tandai
+                                {{ selectedIds.length }} kiriman terpilih.
+                                Lengkapi catatan dan bukti foto sebelum
+                                mengirim.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <Form
+                            v-bind="bulkStatusRoute.form()"
+                            enctype="multipart/form-data"
+                            class="space-y-4"
+                            v-slot="{ errors, processing }"
+                            @success="bulkStatusOpen = false"
+                        >
+                            <input
+                                v-for="id in selectedIds"
+                                :key="id"
+                                type="hidden"
+                                name="ids[]"
+                                :value="id"
+                            />
+
+                            <div v-if="bulkTargets.length > 1" class="grid gap-2">
+                                <Label
+                                    class="text-xs font-medium text-muted-foreground"
+                                >
+                                    Status Tujuan
+                                </Label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button
+                                        v-for="[key, label] in bulkTargets"
+                                        :key="key"
+                                        type="button"
+                                        class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+                                        :class="
+                                            bulkTarget === key
+                                                ? 'border-primary-600 bg-primary-600 text-white'
+                                                : 'border-input text-foreground hover:bg-surface-muted'
+                                        "
+                                        @click="bulkTarget = key"
+                                    >
+                                        {{ label }}
+                                    </button>
+                                </div>
+                                <input
+                                    type="hidden"
+                                    name="status"
+                                    :value="bulkTarget"
+                                />
+                            </div>
+                            <input
+                                v-else
+                                type="hidden"
+                                name="status"
+                                :value="bulkTarget"
+                            />
+
+                            <div class="grid gap-2">
+                                <Label
+                                    for="bulk-notes"
+                                    class="text-xs font-medium text-muted-foreground"
+                                >
+                                    Catatan
+                                </Label>
+                                <textarea
+                                    id="bulk-notes"
+                                    name="notes"
+                                    rows="3"
+                                    class="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                    placeholder="Catatan opsional (mis. kondisi paket, waktu penyerahan...)"
+                                ></textarea>
+                                <InputError :message="errors.notes" />
+                            </div>
+
+                            <div class="grid gap-2">
+                                <Label
+                                    for="bulk-attachment"
+                                    class="text-xs font-medium text-muted-foreground"
+                                >
+                                    Bukti Foto
+                                </Label>
+                                <Input
+                                    id="bulk-attachment"
+                                    name="attachment"
+                                    type="file"
+                                    accept="image/*"
+                                    class="file:text-sm"
+                                    @change="onBulkFileChange"
+                                />
+                                <img
+                                    v-if="bulkAttachmentPreview"
+                                    :src="bulkAttachmentPreview"
+                                    alt="Pratinjau bukti foto"
+                                    class="mt-1 max-h-40 rounded-lg border object-cover"
+                                />
+                                <InputError :message="errors.attachment" />
+                            </div>
+
+                            <DialogFooter class="gap-2">
+                                <DialogClose as-child>
+                                    <Button type="button" variant="secondary">
+                                        Batal
+                                    </Button>
+                                </DialogClose>
+                                <Button
+                                    type="submit"
+                                    :disabled="processing"
+                                >
+                                    <Loader2
+                                        v-if="processing"
+                                        class="animate-spin"
+                                    />
+                                    <Check v-else />
+                                    Tandai
+                                </Button>
+                            </DialogFooter>
+                        </Form>
+                    </DialogContent>
+                </Dialog>
+                <ConfirmDialog
+                    title="Hapus Kiriman Terpilih"
+                    :description="`Yakin ingin menghapus ${selectedIds.length} kiriman terpilih? Tindakan ini tidak dapat dibatalkan.`"
+                    confirm-text="Hapus Semua"
+                    @confirm="deleteSelected"
+                >
+                    <Button variant="destructive" size="sm">
+                        <Trash2 />
+                        Hapus
+                    </Button>
+                </ConfirmDialog>
+            </div>
+        </div>
+
+        <!-- Datatable -->
+        <DataTable
+            title="Daftar Kiriman"
+            :description="`Menampilkan ${shipments.from ?? 0}–${shipments.to ?? 0} dari ${shipments.total} kiriman.`"
+            :total="shipments.total"
+            :from="shipments.from"
+            :to="shipments.to"
+            :links="shipments.links"
+            :per-page="perPage"
+            :icon="Boxes"
+            @update:per-page="changePerPage"
+        >
+            <table class="w-full text-sm">
                     <thead
-                        class="sticky top-0 z-10 bg-surface-muted/80 backdrop-blur-sm"
+                        class="sticky top-0 z-10 bg-surface-muted/60 backdrop-blur-sm"
                     >
                         <tr class="border-b border-border text-left">
-                            <th class="w-10 px-4 py-3">
+                            <th class="w-12 px-3 py-3">
                                 <Checkbox
-                                    :checked="allSelected"
-                                    @update:checked="toggleAll"
+                                    :model-value="allSelected"
+                                    @update:model-value="toggleAll"
                                     aria-label="Pilih semua"
                                 />
                             </th>
-                            <th
-                                class="px-3 py-3 font-medium text-muted-foreground"
-                            >
-                                Tracking
-                            </th>
-                            <th
-                                class="px-3 py-3 font-medium text-muted-foreground"
-                            >
-                                Santri
-                            </th>
-                            <th
-                                class="hidden px-3 py-3 font-medium text-muted-foreground lg:table-cell"
-                            >
-                                Pengirim
-                            </th>
-                            <th
+                            <SortableHeader
+                                label="No"
+                                column="no"
+                                :sort="sort"
+                                @sort="sortBy"
+                            />
+                            <SortableHeader
+                                label="Tracking"
+                                column="tracking_code"
+                                :sort="sort"
+                                @sort="sortBy"
+                            />
+                            <SortableHeader
+                                label="Santri"
+                                column="student"
+                                :sort="sort"
+                                @sort="sortBy"
+                            />
+                            <SortableHeader
+                                label="Pengirim"
+                                column="sender_name"
+                                :sort="sort"
+                                @sort="sortBy"
+                            />
+                            <SortableHeader
                                 v-if="isSuperAdmin"
-                                class="px-3 py-3 font-medium text-muted-foreground"
-                            >
-                                Wilayah
-                            </th>
+                                label="Wilayah"
+                                column="region"
+                                :sort="sort"
+                                @sort="sortBy"
+                            />
+                            <SortableHeader
+                                label="Paket"
+                                column="package_count"
+                                :sort="sort"
+                                @sort="sortBy"
+                            />
+                            <SortableHeader
+                                label="Nominal"
+                                column="amount_money"
+                                :sort="sort"
+                                @sort="sortBy"
+                            />
+                            <SortableHeader
+                                label="Status"
+                                column="status"
+                                :sort="sort"
+                                @sort="sortBy"
+                            />
+                            <SortableHeader
+                                label="Update"
+                                column="updated_at"
+                                :sort="sort"
+                                @sort="sortBy"
+                            />
                             <th
-                                class="px-3 py-3 font-medium text-muted-foreground"
-                            >
-                                Paket
-                            </th>
-                            <th
-                                class="hidden px-3 py-3 font-medium text-muted-foreground xl:table-cell"
-                            >
-                                Nominal
-                            </th>
-                            <th
-                                class="px-3 py-3 font-medium text-muted-foreground"
-                            >
-                                Status
-                            </th>
-                            <th
-                                class="hidden px-3 py-3 font-medium text-muted-foreground xl:table-cell"
-                            >
-                                Update
-                            </th>
-                            <th
-                                class="px-3 py-3 text-right font-medium text-muted-foreground"
+                                class="px-3 py-3 text-right text-[11px] font-semibold tracking-wider text-muted-foreground uppercase"
                             >
                                 Aksi
                             </th>
@@ -297,26 +660,36 @@ const printSelected = () => {
                     </thead>
                     <tbody>
                         <tr
-                            v-for="item in shipments.data"
+                            v-for="(item, index) in shipments.data"
                             :key="item.id"
-                            class="border-b border-border last:border-0 hover:bg-surface-muted/50"
+                            class="border-b border-border/60 transition-colors last:border-0 even:bg-surface-muted/30 hover:bg-surface-muted/70"
                             :class="{
-                                'bg-primary-50/60 dark:bg-primary-950/20':
+                                'bg-primary-50/60 hover:bg-primary-50/80 dark:bg-primary-950/20 dark:hover:bg-primary-950/30':
                                     isSelected(item.id),
                             }"
                         >
-                            <td class="px-4 py-3">
+                            <td class="px-3 py-3">
                                 <Checkbox
-                                    :checked="isSelected(item.id)"
-                                    @update:checked="
-                                        (v: boolean) => toggle(item.id, v)
+                                    :model-value="isSelected(item.id)"
+                                    @update:model-value="
+                                        (v: CheckboxCheckedState) =>
+                                            toggle(item.id, v)
                                     "
                                     :aria-label="`Pilih ${item.tracking_code}`"
                                 />
                             </td>
+                            <td
+                                class="px-3 py-3 text-xs text-muted-foreground tabular-nums"
+                            >
+                                {{ rowIndex(index) }}
+                            </td>
                             <td class="px-3 py-3">
                                 <Link
-                                    :href="`/shipments/${item.id}`"
+                                    :href="
+                                        showShipmentRoute(item.id, {
+                                            query: { back: backToList() },
+                                        }).url
+                                    "
                                     class="font-mono text-xs font-semibold text-primary-700 hover:underline dark:text-primary-400"
                                 >
                                     {{ item.tracking_code }}
@@ -330,7 +703,7 @@ const printSelected = () => {
                                     NIS {{ item.student?.nis }}
                                 </div>
                             </td>
-                            <td class="hidden px-3 py-3 lg:table-cell">
+                            <td class="px-3 py-3">
                                 <div>{{ item.sender_name }}</div>
                                 <div class="text-xs text-muted-foreground">
                                     {{ item.sender_phone }}
@@ -341,10 +714,10 @@ const printSelected = () => {
                                     {{ item.region?.code }}
                                 </Badge>
                             </td>
-                            <td class="px-3 py-3">
+                            <td class="px-3 py-3 tabular-nums">
                                 {{ item.package_count }} koli
                             </td>
-                            <td class="hidden px-3 py-3 xl:table-cell">
+                            <td class="px-3 py-3 tabular-nums">
                                 {{ formatCurrency(item.amount_money) }}
                             </td>
                             <td class="px-3 py-3">
@@ -353,44 +726,37 @@ const printSelected = () => {
                                     size="sm"
                                 />
                             </td>
-                            <td
-                                class="hidden px-3 py-3 text-xs text-muted-foreground xl:table-cell"
-                            >
+                            <td class="px-3 py-3 text-xs text-muted-foreground">
                                 {{ formatDateTime(item.updated_at) }}
                             </td>
-                            <td class="px-3 py-3 text-right">
-                                <Button as-child variant="outline" size="sm">
-                                    <Link :href="`/shipments/${item.id}`"
-                                        >Detail</Link
+                            <td class="px-3 py-3">
+                                <div
+                                    class="flex items-center justify-end gap-1"
+                                >
+                                    <Button
+                                        as-child
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        :aria-label="`Lihat detail ${item.tracking_code}`"
                                     >
-                                </Button>
+                                        <Link
+                                            :href="
+                                                showShipmentRoute(item.id, {
+                                                    query: {
+                                                        back: backToList(),
+                                                    },
+                                                }).url
+                                            "
+                                        >
+                                            <Eye />
+                                        </Link>
+                                    </Button>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
-                <EmptyState
-                    v-if="shipments.data.length === 0"
-                    :icon="Boxes"
-                    title="Belum ada kiriman"
-                    :description="
-                        hasActiveFilters
-                            ? 'Tidak ada kiriman yang cocok dengan filter Anda.'
-                            : 'Belum ada data kiriman untuk ditampilkan.'
-                    "
-                />
-            </div>
-            <div
-                v-if="shipments.data.length > 0"
-                class="border-t border-border px-4 py-3"
-            >
-                <Pagination :links="shipments.links" />
-            </div>
-        </Card>
-
-        <!-- Mobile cards -->
-        <div v-if="shipments.data.length === 0" class="md:hidden">
-            <Card>
-                <CardContent>
+                <div v-if="shipments.data.length === 0" class="px-4 py-12">
                     <EmptyState
                         :icon="Boxes"
                         title="Belum ada kiriman"
@@ -400,71 +766,7 @@ const printSelected = () => {
                                 : 'Belum ada data kiriman untuk ditampilkan.'
                         "
                     />
-                </CardContent>
-            </Card>
-        </div>
-        <div v-else class="flex flex-col gap-3 md:hidden">
-            <div
-                v-for="item in shipments.data"
-                :key="item.id"
-                class="rounded-xl border border-border bg-card p-4 shadow-sm"
-            >
-                <div class="flex items-center justify-between gap-2">
-                    <Link
-                        :href="`/shipments/${item.id}`"
-                        class="font-mono text-sm font-semibold text-primary-700 dark:text-primary-400"
-                    >
-                        {{ item.tracking_code }}
-                    </Link>
-                    <ShipmentStatusBadge :status="item.status" size="sm" />
                 </div>
-                <div class="mt-3 space-y-1">
-                    <div class="font-medium">{{ item.student?.name }}</div>
-                    <div class="text-xs text-muted-foreground">
-                        NIS {{ item.student?.nis }}
-                    </div>
-                    <div class="text-xs text-muted-foreground">
-                        {{ item.student?.dormitory }}
-                    </div>
-                </div>
-                <div
-                    class="mt-3 flex items-center justify-between border-t border-border pt-3 text-sm"
-                >
-                    <span class="text-muted-foreground">
-                        {{ item.package_count }} koli
-                        <span
-                            v-if="item.amount_money > 0"
-                            class="text-foreground"
-                        >
-                            &middot; {{ formatCurrency(item.amount_money) }}
-                        </span>
-                    </span>
-                    <span class="text-xs text-muted-foreground">
-                        {{ formatDateTime(item.updated_at) }}
-                    </span>
-                </div>
-                <div class="mt-3 flex items-center gap-2">
-                    <Button as-child variant="outline" size="sm" class="flex-1">
-                        <Link :href="`/shipments/${item.id}`"
-                            >Lihat Detail</Link
-                        >
-                    </Button>
-                    <label
-                        class="flex items-center gap-1.5 text-xs text-muted-foreground"
-                    >
-                        <Checkbox
-                            :checked="isSelected(item.id)"
-                            @update:checked="(v: boolean) => toggle(item.id, v)"
-                        />
-                        Pilih
-                    </label>
-                </div>
-            </div>
-        </div>
-        <Pagination
-            v-if="shipments.data.length > 0"
-            :links="shipments.links"
-            class="md:hidden"
-        />
+        </DataTable>
     </div>
 </template>

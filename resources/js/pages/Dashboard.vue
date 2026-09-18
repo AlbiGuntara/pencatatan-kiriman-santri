@@ -137,32 +137,32 @@ const kpis = computed(() => [
 <template>
     <Head title="Dashboard" />
 
-    <div class="flex h-full flex-1 flex-col gap-6 overflow-x-hidden p-4 md:p-6">
+    <div
+        class="flex min-h-full w-full flex-col gap-6 overflow-x-hidden p-4 md:p-6"
+    >
         <!-- Hero / Greeting -->
         <div
-            class="flex flex-col gap-4 rounded-2xl border border-primary-100 bg-gradient-to-r from-primary-50 via-white to-accent-50 p-6 dark:border-primary-900/50 dark:from-primary-950/40 dark:via-card dark:to-accent-950/20"
+            class="flex flex-col gap-4 rounded-2xl border border-primary-700/30 bg-gradient-to-r from-primary-700 via-primary-600 to-primary-500 p-6 shadow-sm dark:border-primary-400/20 dark:from-primary-950 dark:via-primary-900 dark:to-primary-800"
         >
             <div
                 class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
             >
                 <div class="flex flex-col gap-1">
-                    <h2
-                        class="text-2xl font-bold tracking-tight text-primary-950 dark:text-primary-100"
-                    >
+                    <h2 class="text-2xl font-bold tracking-tight text-white">
                         {{ greeting.title }}
                     </h2>
-                    <p class="text-sm text-muted-foreground">
+                    <p class="text-sm text-primary-50/90">
                         {{ greeting.sub }}
                     </p>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                     <Button as-child variant="outline" class="shrink-0">
                         <Link :href="shipments()">
                             Semua Kiriman
                             <ArrowRight />
                         </Link>
                     </Button>
-                    <Button as-child class="shrink-0">
+                    <Button as-child variant="accent" class="shrink-0">
                         <Link :href="createShipment()">
                             <Plus />
                             Input Kiriman
@@ -201,10 +201,10 @@ const kpis = computed(() => [
             </Card>
         </div>
 
-        <div class="grid flex-1 gap-4 xl:grid-cols-3">
+        <div class="grid flex-1 grid-cols-1 gap-4 xl:grid-cols-3">
             <!-- Recent Shipments -->
-            <Card class="xl:col-span-2">
-                <CardHeader class="flex-row items-center justify-between">
+            <Card class="min-w-0 xl:col-span-2">
+                <CardHeader class="flex-row flex-wrap items-center justify-between">
                     <div>
                         <CardTitle>Kiriman Terbaru</CardTitle>
                         <CardDescription>
@@ -317,7 +317,7 @@ const kpis = computed(() => [
             </Card>
 
             <!-- Right column -->
-            <div class="flex flex-col gap-4">
+            <div class="flex min-w-0 flex-col gap-4">
                 <Card>
                     <CardHeader>
                         <CardTitle class="flex items-center gap-2">

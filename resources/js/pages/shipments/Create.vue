@@ -56,7 +56,10 @@ const props = defineProps<{
     locations: string[];
     region: Region | null;
     regions: Region[];
+    back?: string;
 }>();
+
+const backUrl = computed(() => props.back || shipments());
 
 const searchTerm = ref('');
 const results = ref<Student[]>([]);
@@ -110,7 +113,7 @@ const clearStudent = () => {
     <div class="mx-auto flex max-w-3xl flex-col gap-5 p-4 md:p-6">
         <div class="flex flex-col gap-2">
             <Button as-child variant="ghost" size="sm" class="w-fit">
-                <Link :href="shipments()">
+                <Link :href="backUrl">
                     <ArrowLeft />
                     Kembali
                 </Link>
@@ -129,9 +132,15 @@ const clearStudent = () => {
 
         <Form
             v-bind="ShipmentController.store.form()"
+            :options="{ preserveScroll: true }"
             class="space-y-4"
             v-slot="{ errors, processing }"
         >
+            <input
+                type="hidden"
+                name="back"
+                :value="props.back"
+            />
             <input
                 type="hidden"
                 name="student_id"
@@ -433,9 +442,9 @@ const clearStudent = () => {
                     <Send v-else />
                     Simpan Kiriman
                 </Button>
-                <Button as-child variant="outline">
-                    <Link :href="shipments()">Batal</Link>
-                </Button>
+<Button as-child variant="outline">
+                            <Link :href="backUrl">Batal</Link>
+                        </Button>
             </div>
         </Form>
     </div>

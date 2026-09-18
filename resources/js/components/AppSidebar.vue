@@ -6,7 +6,6 @@ import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
-import RegionIndicator from '@/components/RegionIndicator.vue';
 import {
     Sidebar,
     SidebarContent,
@@ -84,10 +83,6 @@ const navGroups = computed(() => {
         </SidebarHeader>
 
         <SidebarContent>
-            <div class="px-3 pb-3 group-data-[collapsible=icon]:hidden">
-                <RegionIndicator />
-            </div>
-
             <NavMain :groups="navGroups" />
         </SidebarContent>
 

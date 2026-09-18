@@ -21,7 +21,7 @@ class StudentFactory extends Factory
             'nis' => (string) fake()->unique()->numerify('##########'),
             'name' => fake()->name(),
             'dormitory' => fake()->randomElement(['Asrama Al-Ikhlas', 'Asrama Al-Furqon', 'Asrama An-Nur', 'Asrama Ar-Rohmah', 'Asrama Al-Hikmah']),
-            'location_type' => fake()->randomElement(['Pusat Putra', 'Pusat Putri', 'Ma\'had Aly', 'Nurul Jadid/Qodliyah', 'Al-Khuzaimah', 'Az-Zainiyah']),
+            'location_type' => fake()->randomElement(['Pusat Putra', 'Pusat Putri', "Ma'had Aly", 'Nurul Jadid/Qodliyah', 'Al-Khuzaimah', 'Az-Zainiyah']),
         ];
     }
 }

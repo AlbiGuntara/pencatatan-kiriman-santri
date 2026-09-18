@@ -10,6 +10,7 @@ export type Student = {
     name: string;
     dormitory: string;
     location_type: string;
+    regions: Region[];
 };
 
 export type ShipmentStatus = 'created' | 'in_transit' | 'delivered';

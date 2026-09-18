@@ -13,6 +13,9 @@ class RegionController extends Controller
 {
     public function index(Request $request): Response
     {
+        $sort = $request->string('sort')->toString();
+        $direction = $request->string('direction')->lower()->toString() === 'desc' ? 'desc' : 'asc';
+
         $regions = Region::query()
             ->withCount(['shipments', 'users'])
             ->when($request->filled('search'), function ($query) use ($request) {
@@ -23,19 +26,27 @@ class RegionController extends Controller
                         ->orWhere('code', 'like', "%{$search}%");
                 });
             })
-            ->orderBy('name')
-            ->paginate(20)
+            ->when(in_array($sort, ['code', 'name', 'shipments_count', 'users_count'], true), function ($query) use ($sort, $direction) {
+                $query->orderBy($sort, $direction);
+            })
+            ->when($sort === 'no', function ($query) use ($direction) {
+                $query->orderBy('id', $direction);
+            })
+            ->when($sort === '', fn ($query) => $query->latest())
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         return Inertia::render('regions/Index', [
             'regions' => $regions,
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['search', 'per_page', 'sort', 'direction']),
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
-        return Inertia::render('regions/Create');
+        return Inertia::render('regions/Create', [
+            'back' => $request->string('back')->trim()->toString(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -52,13 +63,14 @@ class RegionController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Wilayah IKSASS berhasil ditambahkan.']);
 
-        return to_route('regions.index');
+        return $this->redirectToList($request, '/regions', 'regions.index');
     }
 
-    public function edit(Region $region): Response
+    public function edit(Request $request, Region $region): Response
     {
         return Inertia::render('regions/Edit', [
             'region' => $region,
+            'back' => $request->string('back')->trim()->toString(),
         ]);
     }
 
@@ -76,7 +88,7 @@ class RegionController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Wilayah IKSASS berhasil diperbarui.']);
 
-        return to_route('regions.index');
+        return $this->redirectToList($request, '/regions', 'regions.index');
     }
 
     public function destroy(Region $region): RedirectResponse
@@ -97,6 +109,6 @@ class RegionController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Wilayah IKSASS berhasil dihapus.']);
 
-        return to_route('regions.index');
+        return $this->redirectToList($request, '/regions', 'regions.index');
     }
 }

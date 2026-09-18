@@ -49,7 +49,10 @@ const props = defineProps<{
     shipment: Shipment;
     canUpdateStatus: boolean;
     printUrl: string;
+    back?: string;
 }>();
+
+const backUrl = computed(() => props.back || shipments());
 
 const logs = computed(() => props.shipment.logs ?? []);
 
@@ -138,7 +141,7 @@ const onFileChange = (event: Event) => {
         >
             <div class="flex flex-col gap-2">
                 <Button as-child variant="ghost" size="sm" class="w-fit">
-                    <Link :href="shipments()">
+                    <Link :href="backUrl">
                         <ArrowLeft />
                         Kembali
                     </Link>

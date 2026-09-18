@@ -7,7 +7,11 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'Welcome')->name('home');
+Route::get('/', function () {
+    return auth()->check()
+        ? redirect()->route('dashboard')
+        : redirect()->route('login');
+})->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -16,20 +20,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('shipments/create', [ShipmentController::class, 'create'])->name('shipments.create');
     Route::post('shipments', [ShipmentController::class, 'store'])->name('shipments.store');
     Route::get('shipments/print', [ShipmentController::class, 'print'])->name('shipments.print');
+    Route::delete('shipments/destroy-many', [ShipmentController::class, 'destroyMany'])->name('shipments.destroy-many');
+    Route::post('shipments/bulk-status', [ShipmentController::class, 'bulkUpdateStatus'])->name('shipments.bulk-status');
     Route::get('shipments/{shipment}', [ShipmentController::class, 'show'])->name('shipments.show');
     Route::post('shipments/{shipment}/status', [ShipmentController::class, 'updateStatus'])->name('shipments.status');
     Route::delete('shipments/{shipment}', [ShipmentController::class, 'destroy'])->name('shipments.destroy');
 
+    Route::get('students', [StudentController::class, 'index'])->name('students.index');
+    Route::get('students/create', [StudentController::class, 'create'])->name('students.create');
+    Route::post('students', [StudentController::class, 'store'])->name('students.store');
+    Route::get('students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
+    Route::patch('students/{student}', [StudentController::class, 'update'])->name('students.update');
+    Route::delete('students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
+
     Route::get('students/search', [StudentController::class, 'search'])->name('students.search');
 
     Route::middleware('role:super_admin')->group(function () {
-        Route::get('students', [StudentController::class, 'index'])->name('students.index');
-        Route::get('students/create', [StudentController::class, 'create'])->name('students.create');
-        Route::post('students', [StudentController::class, 'store'])->name('students.store');
-        Route::get('students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
-        Route::patch('students/{student}', [StudentController::class, 'update'])->name('students.update');
-        Route::delete('students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
-
         Route::get('regions', [RegionController::class, 'index'])->name('regions.index');
         Route::get('regions/create', [RegionController::class, 'create'])->name('regions.create');
         Route::post('regions', [RegionController::class, 'store'])->name('regions.store');

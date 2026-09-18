@@ -14,6 +14,9 @@ class UserController extends Controller
 {
     public function index(Request $request): Response
     {
+        $sort = $request->string('sort')->toString();
+        $direction = $request->string('direction')->lower()->toString() === 'desc' ? 'desc' : 'asc';
+
         $users = User::query()
             ->with('region:id,name,code')
             ->when($request->filled('search'), function ($query) use ($request) {
@@ -24,22 +27,35 @@ class UserController extends Controller
                         ->orWhere('email', 'like', "%{$search}%");
                 });
             })
-            ->orderBy('name')
-            ->paginate(20)
+            ->when(in_array($sort, ['name', 'email', 'role', 'created_at'], true), function ($query) use ($sort, $direction) {
+                $query->orderBy($sort, $direction);
+            })
+            ->when($sort === 'no', function ($query) use ($direction) {
+                $query->orderBy('id', $direction);
+            })
+            ->when($sort === 'region', function ($query) use ($direction) {
+                $query->orderBy(
+                    Region::select('name')->whereColumn('regions.id', 'users.region_iksass_id'),
+                    $direction,
+                );
+            })
+            ->when($sort === '', fn ($query) => $query->latest())
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         return Inertia::render('users/Index', [
             'users' => $users,
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['search', 'per_page', 'sort', 'direction']),
             'roles' => User::ROLES,
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         return Inertia::render('users/Create', [
             'roles' => User::ROLES,
             'regions' => Region::query()->orderBy('name')->get(['id', 'name', 'code']),
+            'back' => $request->string('back')->trim()->toString(),
         ]);
     }
 
@@ -64,15 +80,16 @@ class UserController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "Akun {$user->name} berhasil dibuat."]);
 
-        return to_route('users.index');
+        return $this->redirectToList($request, '/users', 'users.index');
     }
 
-    public function edit(User $user): Response
+    public function edit(Request $request, User $user): Response
     {
         return Inertia::render('users/Edit', [
             'user' => $user,
             'roles' => User::ROLES,
             'regions' => Region::query()->orderBy('name')->get(['id', 'name', 'code']),
+            'back' => $request->string('back')->trim()->toString(),
         ]);
     }
 
@@ -101,7 +118,7 @@ class UserController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "Akun {$user->name} berhasil diperbarui."]);
 
-        return to_route('users.index');
+        return $this->redirectToList($request, '/users', 'users.index');
     }
 
     public function destroy(Request $request, User $user): RedirectResponse
@@ -112,10 +129,16 @@ class UserController extends Controller
             return back();
         }
 
+        if ($user->shipments()->exists() || $user->shipmentLogs()->exists()) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'Akun tidak dapat dihapus karena masih memiliki data kiriman atau riwayat aktivitas.']);
+
+            return back();
+        }
+
         $user->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "Akun {$user->name} berhasil dihapus."]);
 
-        return to_route('users.index');
+        return $this->redirectToList($request, '/users', 'users.index');
     }
 }

@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { Form } from '@inertiajs/vue3';
 import { ArrowLeft } from '@lucide/vue';
+import { computed } from 'vue';
 import RegionController from '@/actions/App/Http/Controllers/RegionController';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,12 @@ defineOptions({
         ],
     },
 });
+
+const props = defineProps<{
+    back?: string;
+}>();
+
+const backUrl = computed(() => props.back || regions());
 </script>
 
 <template>
@@ -32,7 +39,7 @@ defineOptions({
     <div class="flex flex-col gap-4 p-4">
         <div class="flex flex-col gap-2">
             <Button as-child variant="ghost" size="sm" class="w-fit">
-                <Link :href="regions()">
+                <Link :href="backUrl">
                     <ArrowLeft />
                     Kembali
                 </Link>
@@ -51,9 +58,15 @@ defineOptions({
             <CardContent>
                 <Form
                     v-bind="RegionController.store.form()"
+                    :options="{ preserveScroll: true }"
                     class="space-y-4"
                     v-slot="{ errors, processing }"
                 >
+                    <input
+                        type="hidden"
+                        name="back"
+                        :value="props.back"
+                    />
                     <div class="grid gap-2">
                         <Label for="name">Nama Wilayah</Label>
                         <Input id="name" name="name" required placeholder="Contoh: IKSASS Bali" />
@@ -69,7 +82,7 @@ defineOptions({
                     <div class="flex gap-2 pt-2">
                         <Button type="submit" :disabled="processing">Simpan</Button>
                         <Button as-child variant="outline">
-                            <Link :href="regions()">Batal</Link>
+                            <Link :href="backUrl">Batal</Link>
                         </Button>
                     </div>
                 </Form>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Region;
 use App\Models\Shipment;
 use App\Models\ShipmentLog;
+use App\Models\Student;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -16,6 +17,9 @@ class ShipmentController extends Controller
 {
     public function index(Request $request): Response
     {
+        $sort = $request->string('sort')->toString();
+        $direction = $request->string('direction')->lower()->toString() === 'desc' ? 'desc' : 'asc';
+
         $shipments = Shipment::query()
             ->with(['student:id,nis,name,dormitory,location_type', 'region:id,name,code', 'creator:id,name'])
             ->when($request->filled('search'), function ($query) use ($request) {
@@ -36,13 +40,31 @@ class ShipmentController extends Controller
             ->when($request->filled('region_id') && $request->integer('region_id') > 0, function ($query) use ($request) {
                 $query->where('region_iksass_id', $request->integer('region_id'));
             })
-            ->latest()
-            ->paginate(15)
+            ->when(in_array($sort, ['tracking_code', 'sender_name', 'package_count', 'amount_money', 'status', 'updated_at', 'created_at'], true), function ($query) use ($sort, $direction) {
+                $query->orderBy($sort, $direction);
+            })
+            ->when($sort === 'no', function ($query) use ($direction) {
+                $query->orderBy('id', $direction);
+            })
+            ->when($sort === 'student', function ($query) use ($direction) {
+                $query->orderBy(
+                    Student::select('name')->whereColumn('students.id', 'shipments.student_id'),
+                    $direction,
+                );
+            })
+            ->when($sort === 'region', function ($query) use ($direction) {
+                $query->orderBy(
+                    Region::select('name')->whereColumn('regions.id', 'shipments.region_iksass_id'),
+                    $direction,
+                );
+            })
+            ->when($sort === '', fn ($query) => $query->latest())
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         return Inertia::render('shipments/Index', [
             'shipments' => $shipments,
-            'filters' => $request->only(['search', 'status', 'region_id']),
+            'filters' => $request->only(['search', 'status', 'region_id', 'per_page', 'sort', 'direction']),
             'statuses' => Shipment::STATUSES,
             'regions' => $request->user()->isSuperAdmin()
                 ? Region::query()->orderBy('name')->get(['id', 'name', 'code'])
@@ -61,6 +83,7 @@ class ShipmentController extends Controller
             'regions' => $request->user()->isSuperAdmin()
                 ? Region::query()->orderBy('name')->get(['id', 'name', 'code'])
                 : [],
+            'back' => $request->string('back')->trim()->toString(),
         ]);
     }
 
@@ -116,7 +139,14 @@ class ShipmentController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "Kiriman {$shipment->tracking_code} berhasil dicatat."]);
 
-        return to_route('shipments.show', $shipment);
+        $params = ['shipment' => $shipment->id];
+        $back = $this->internalBackUrl($request->string('back')->toString());
+
+        if ($back !== '') {
+            $params['back'] = $back;
+        }
+
+        return to_route('shipments.show', $params);
     }
 
     public function show(Request $request, Shipment $shipment): Response
@@ -158,6 +188,7 @@ class ShipmentController extends Controller
             ],
             'canUpdateStatus' => $shipment->status !== Shipment::STATUS_DELIVERED,
             'printUrl' => route('shipments.print', ['shipments' => [$shipment->id]]),
+            'back' => $request->string('back')->trim()->toString(),
         ]);
     }
 
@@ -203,9 +234,81 @@ class ShipmentController extends Controller
         return back();
     }
 
+    public function bulkUpdateStatus(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:shipments,id'],
+            'status' => ['required', Rule::in(array_keys(Shipment::STATUSES))],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'attachment' => ['nullable', 'image', 'max:5120'],
+        ]);
+
+        $status = $data['status'];
+
+        $attachmentPath = null;
+
+        if ($request->hasFile('attachment')) {
+            $attachmentPath = $request->file('attachment')->store(
+                'shipment-photos/bulk-'.now()->format('Ymd-His'),
+                'public',
+            );
+        }
+
+        $shipments = Shipment::query()
+            ->whereIn('id', $data['ids'])
+            ->get();
+
+        $updated = 0;
+        $skipped = 0;
+
+        foreach ($shipments as $shipment) {
+            $allowedNext = match ($shipment->status) {
+                Shipment::STATUS_CREATED => [Shipment::STATUS_IN_TRANSIT],
+                Shipment::STATUS_IN_TRANSIT => [Shipment::STATUS_DELIVERED],
+                default => [],
+            };
+
+            if (! in_array($status, $allowedNext, true)) {
+                $skipped++;
+
+                continue;
+            }
+
+            $previousStatus = $shipment->status;
+            $shipment->status = $status;
+            $shipment->save();
+
+            ShipmentLog::query()->create([
+                'shipment_id' => $shipment->id,
+                'status_from' => $previousStatus,
+                'status_to' => $status,
+                'notes' => $data['notes'] ?? null,
+                'attachment_path' => $attachmentPath,
+                'logged_by' => $request->user()->id,
+                'created_at' => now(),
+            ]);
+
+            $updated++;
+        }
+
+        if ($updated > 0) {
+            Inertia::flash('toast', ['type' => 'success', 'message' => "{$updated} kiriman diubah menjadi ".(Shipment::STATUSES[$status] ?? $status).'.']);
+        }
+
+        if ($skipped > 0 && $updated === 0) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'Tidak ada kiriman yang dapat diubah ke status tersebut.']);
+        } elseif ($skipped > 0) {
+            Inertia::flash('toast', ['type' => 'warning', 'message' => "{$skipped} kiriman dilewati karena statusnya tidak dapat diubah."]);
+        }
+
+        return back();
+    }
+
     public function print(Request $request): Response
     {
-        $ids = collect($request->query('shipments', []))
+        $ids = collect((array) $request->query('shipments', []))
+            ->flatMap(fn ($value) => is_array($value) ? $value : explode(',', (string) $value))
             ->map(fn ($id) => (int) $id)
             ->filter()
             ->values()
@@ -239,13 +342,29 @@ class ShipmentController extends Controller
         ]);
     }
 
-    public function destroy(Shipment $shipment): RedirectResponse
+    public function destroy(Request $request, Shipment $shipment): RedirectResponse
     {
         $trackingCode = $shipment->tracking_code;
         $shipment->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "Kiriman {$trackingCode} berhasil dihapus."]);
 
-        return to_route('shipments.index');
+        return $this->redirectToList($request, '/shipments', 'shipments.index');
+    }
+
+    public function destroyMany(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:shipments,id'],
+        ]);
+
+        $count = Shipment::query()
+            ->whereIn('id', $data['ids'])
+            ->delete();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => "{$count} kiriman berhasil dihapus."]);
+
+        return $this->redirectToList($request, '/shipments', 'shipments.index');
     }
 }

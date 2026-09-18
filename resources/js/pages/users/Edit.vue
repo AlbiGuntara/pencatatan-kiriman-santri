@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { Form } from '@inertiajs/vue3';
 import { ArrowLeft } from '@lucide/vue';
+import { computed } from 'vue';
 import UserController from '@/actions/App/Http/Controllers/UserController';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -33,14 +34,17 @@ defineOptions({
     },
 });
 
-defineProps<{
+const props = defineProps<{
     user: User;
     roles: Record<string, string>;
     regions: Region[];
+    back?: string;
 }>();
 
 const update = UserController.update;
 const destroy = UserController.destroy;
+
+const backUrl = computed(() => props.back || users());
 </script>
 
 <template>
@@ -49,7 +53,7 @@ const destroy = UserController.destroy;
     <div class="flex flex-col gap-4 p-4">
         <div class="flex flex-col gap-2">
             <Button as-child variant="ghost" size="sm" class="w-fit">
-                <Link :href="users()">
+                <Link :href="backUrl">
                     <ArrowLeft />
                     Kembali
                 </Link>
@@ -66,9 +70,15 @@ const destroy = UserController.destroy;
             <CardContent>
                 <Form
                     v-bind="update.form(user.id)"
+                    :options="{ preserveScroll: true }"
                     class="space-y-4"
                     v-slot="{ errors, processing }"
                 >
+                    <input
+                        type="hidden"
+                        name="back"
+                        :value="props.back"
+                    />
                     <div class="grid gap-2">
                         <Label for="name">Nama Lengkap</Label>
                         <Input id="name" name="name" required :default-value="user.name" />
@@ -129,7 +139,7 @@ const destroy = UserController.destroy;
                     <div class="flex gap-2 pt-2">
                         <Button type="submit" :disabled="processing">Perbarui</Button>
                         <Button as-child variant="outline">
-                            <Link :href="users()">Batal</Link>
+                            <Link :href="backUrl">Batal</Link>
                         </Button>
                     </div>
                 </Form>
@@ -137,9 +147,15 @@ const destroy = UserController.destroy;
                 <div class="mt-8 border-t pt-6">
                     <Form
                         v-bind="destroy.form(user.id)"
+                        :options="{ preserveScroll: true }"
                         class="flex items-center justify-between"
                         v-slot="{ processing }"
                     >
+                        <input
+                            type="hidden"
+                            name="back"
+                            :value="props.back"
+                        />
                         <div>
                             <p class="text-sm font-medium text-destructive">Zona Bahaya</p>
                             <p class="text-xs text-muted-foreground">Hapus akun pengguna ini.</p>

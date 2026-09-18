@@ -21,15 +21,15 @@ const props = defineProps<{
 
 const qrDataUrls = ref<Record<string, string>>({});
 
-const APP_URL = `${window.location.origin}`;
-
 const doPrint = () => window.print();
 
 const goBack = () => window.history.back();
 
 onMounted(async () => {
+    const origin = window.location.origin;
+
     for (const shipment of props.shipments) {
-        const url = `${APP_URL}/shipments/${shipment.id}`;
+        const url = `${origin}/shipments/${shipment.id}`;
         qrDataUrls.value[shipment.id] = await QRCode.toDataURL(url, {
             width: 120,
             margin: 1,

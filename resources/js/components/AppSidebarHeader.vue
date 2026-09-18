@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
-import RegionIndicator from '@/components/RegionIndicator.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,7 +15,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import type { BreadcrumbItem } from '@/types';
 
-withDefaults(
+const props = withDefaults(
     defineProps<{
         breadcrumbs?: BreadcrumbItem[];
     }>(),
@@ -26,6 +26,9 @@ withDefaults(
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
+const pageTitle = computed(
+    () => props.breadcrumbs[props.breadcrumbs.length - 1]?.title ?? '',
+);
 </script>
 
 <template>
@@ -34,13 +37,20 @@ const user = computed(() => page.props.auth.user);
     >
         <div class="flex items-center gap-2">
             <SidebarTrigger class="-ml-1" />
+            <div class="flex min-w-0 items-center gap-2 md:hidden">
+                <AppLogoIcon class="size-6 shrink-0" />
+                <span v-if="pageTitle" class="truncate text-sm font-semibold">
+                    {{ pageTitle }}
+                </span>
+            </div>
             <template v-if="breadcrumbs && breadcrumbs.length > 0">
-                <Breadcrumbs :breadcrumbs="breadcrumbs" />
+                <div class="hidden items-center md:flex">
+                    <Breadcrumbs :breadcrumbs="breadcrumbs" />
+                </div>
             </template>
         </div>
 
         <div class="ml-auto flex items-center gap-2">
-            <RegionIndicator variant="topbar" />
             <DropdownMenu>
                 <DropdownMenuTrigger :as-child="true">
                     <Button
