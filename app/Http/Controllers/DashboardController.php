@@ -18,7 +18,10 @@ class DashboardController extends Controller
         $totalShipments = Shipment::query()->count();
         $inTransit = Shipment::query()->where('status', Shipment::STATUS_IN_TRANSIT)->count();
         $delivered = Shipment::query()->where('status', Shipment::STATUS_DELIVERED)->count();
+        $created = Shipment::query()->where('status', Shipment::STATUS_CREATED)->count();
         $totalMoney = (int) Shipment::query()->sum('amount_money');
+
+        $weeklyStats = $this->weeklyStats();
 
         $regionStats = [];
         $isSuperAdmin = $user->isSuperAdmin();
@@ -58,12 +61,55 @@ class DashboardController extends Controller
                 'total_shipments' => $totalShipments,
                 'in_transit' => $inTransit,
                 'delivered' => $delivered,
+                'created' => $created,
                 'total_money' => $totalMoney,
                 'total_students' => $isSuperAdmin ? Student::query()->count() : null,
             ],
+            'weeklyStats' => $weeklyStats,
             'regionStats' => $regionStats,
             'recentShipments' => $recentShipments,
             'isSuperAdmin' => $isSuperAdmin,
         ]);
+    }
+
+    /**
+     * Shipment counts grouped by the last seven days (oldest first).
+     *
+     * @return array<int, array{label: string, short_label: string, count: int, money: int}>
+     */
+    protected function weeklyStats(): array
+    {
+        $start = now()->subDays(6)->startOfDay();
+
+        $grouped = Shipment::query()
+            ->where('created_at', '>=', $start)
+            ->selectRaw('DATE(created_at) as day, COUNT(*) as count, COALESCE(SUM(amount_money), 0) as money')
+            ->groupBy('day')
+            ->orderBy('day')
+            ->pluck('count', 'day')
+            ->mapWithKeys(fn (int $count, string $day) => [$day => (int) $count]);
+
+        $moneyGrouped = Shipment::query()
+            ->where('created_at', '>=', $start)
+            ->selectRaw('DATE(created_at) as day, COALESCE(SUM(amount_money), 0) as money')
+            ->groupBy('day')
+            ->pluck('money', 'day')
+            ->mapWithKeys(fn (int $money, string $day) => [$day => (int) $money]);
+
+        $days = [];
+
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $key = $date->toDateString();
+
+            $days[] = [
+                'label' => $date->translatedFormat('d M'),
+                'short_label' => $date->translatedFormat('D'),
+                'count' => $grouped[$key] ?? 0,
+                'money' => $moneyGrouped[$key] ?? 0,
+            ];
+        }
+
+        return $days;
     }
 }

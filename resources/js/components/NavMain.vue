@@ -25,7 +25,10 @@ const { isCurrentUrl } = useCurrentUrl();
 <template>
     <template v-for="(group, groupIndex) in groups" :key="groupIndex">
         <SidebarGroup class="px-2 py-0">
-            <SidebarGroupLabel v-if="group.label">
+            <SidebarGroupLabel
+                v-if="group.label"
+                class="px-2 text-xs font-semibold uppercase tracking-widest text-sidebar-foreground/40"
+            >
                 {{ group.label }}
             </SidebarGroupLabel>
             <SidebarMenu>

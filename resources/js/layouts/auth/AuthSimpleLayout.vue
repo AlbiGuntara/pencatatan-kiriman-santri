@@ -153,7 +153,7 @@ defineProps<{
                     class="pointer-events-none absolute right-0 bottom-0 hidden size-72 opacity-[0.05] lg:block"
                     aria-hidden="true"
                     style="
-                        background-image: url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%230B1E3A%22%20stroke-width%3D%221%22%3E%3Cpath%20d%3D%22M24%200l6%2018%2018%206-18%206-6%2018-6-18-18-6%2018-6z%22%2F%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2224%22%20r%3D%224%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E');
+                        background-image: url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23063B25%22%20stroke-width%3D%221%22%3E%3Cpath%20d%3D%22M24%200l6%2018%2018%206-18%206-6%2018-6-18-18-6%2018-6z%22%2F%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2224%22%20r%3D%224%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E');
                         background-size: 48px 48px;
                     "
                 />

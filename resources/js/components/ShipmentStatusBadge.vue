@@ -18,19 +18,19 @@ const config: Record<
         icon: CircleDashed,
         label: 'Dibuat',
         className:
-            'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+            'bg-slate-100 text-slate-600 dark:bg-slate-800/80 dark:text-slate-300 border-slate-200 dark:border-slate-700',
     },
     in_transit: {
         icon: Truck,
         label: 'Dalam Perjalanan',
         className:
-            'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+            'bg-sky-100 text-sky-700 dark:bg-sky-950/70 dark:text-sky-300 border-sky-200 dark:border-sky-900',
     },
     delivered: {
         icon: CircleCheck,
         label: 'Diserahkan',
         className:
-            'bg-primary-100 text-primary-800 dark:bg-primary-950 dark:text-primary-300',
+            'bg-primary-100 text-primary-800 dark:bg-primary-950/70 dark:text-primary-300 border-primary-200 dark:border-primary-900',
     },
 };
 

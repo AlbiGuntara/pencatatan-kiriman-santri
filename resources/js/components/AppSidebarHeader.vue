@@ -33,7 +33,7 @@ const pageTitle = computed(
 
 <template>
     <header
-        class="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border/70 bg-background/80 px-6 backdrop-blur-sm transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4"
+        class="flex h-16 shrink-0 items-center gap-2 border-b border-border/70 bg-background/85 px-6 backdrop-blur-md transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4 lg:px-8"
     >
         <div class="flex items-center gap-2">
             <SidebarTrigger class="-ml-1" />
@@ -56,20 +56,26 @@ const pageTitle = computed(
                     <Button
                         variant="ghost"
                         size="icon"
-                        class="relative size-9 rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
+                        class="relative size-10 rounded-full p-0.5 ring-1 ring-primary-200 transition-shadow hover:ring-primary-400 focus-within:ring-2 focus-within:ring-primary dark:ring-primary-800"
                     >
-                        <Avatar class="size-8 overflow-hidden rounded-full">
+                        <Avatar
+                            class="size-9 overflow-hidden rounded-full bg-primary-50"
+                        >
                             <AvatarImage
                                 v-if="user?.avatar"
                                 :src="user.avatar"
                                 :alt="user.name"
                             />
                             <AvatarFallback
-                                class="bg-primary-100 font-semibold text-primary-900"
+                                class="bg-primary-600 font-semibold text-white"
                             >
                                 {{ getInitials(user?.name) }}
                             </AvatarFallback>
                         </Avatar>
+                        <span
+                            class="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-background"
+                            title="Online"
+                        />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" class="w-56">

@@ -7,15 +7,20 @@ const name = usePage().props.name;
 
 <template>
     <div
-        class="flex aspect-square size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-sidebar-primary/20 ring-1 ring-sidebar-primary/40 transition-all duration-200 ease-linear group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md"
+        class="flex aspect-square size-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/10 ring-1 ring-white/15 backdrop-blur-sm transition-all duration-200 ease-linear group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-lg"
     >
         <AppLogoIcon class="size-full p-1" />
     </div>
     <div
-        class="ml-1 grid flex-1 text-left text-sm group-data-[collapsible=icon]:hidden"
+        class="ml-2 grid flex-1 text-left text-sm group-data-[collapsible=icon]:hidden"
     >
-        <span class="mb-0.5 truncate leading-tight font-semibold">{{
-            name
-        }}</span>
+        <span
+            class="mb-0.5 truncate leading-tight font-semibold text-sidebar-foreground"
+            >{{ name }}</span
+        >
+        <span
+            class="truncate text-[11px] leading-tight text-sidebar-foreground/60"
+            >Sistem Kiriman IKSASS</span
+        >
     </div>
 </template>
